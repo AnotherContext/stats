@@ -1,6 +1,5 @@
 # I thank R bloggers: R.Hyndman, T.Hirsch and klr from TimelyPortfolio for inspiration
 # H. Wickham from R-Studio, and R Cookbook for ggplot2 package, "multiplot" function and many other fantastic features 
-# http://christophergandrud.blogspot.co.uk/2012_09_01_archive.html
 # and last but not least- R-Studio Team for their work on Shiny. 
 
 
