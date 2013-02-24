@@ -8,6 +8,7 @@
 # upgrading
 # inla.upgrade(testing=TRUE)
 
+# other packages can be installed directly from CRAN
 library(shiny)
 library(INLA)
 library(ggplot2)
@@ -837,8 +838,9 @@ shinyServer(function(input, output) {
     }
     
     
-    #http://files.meetup.com/1696476/ACFinGGPLOT2Presentation.pdf
-    qacf <- function(x, conf.level = 0.95, max.lag = NULL, min.lag = 1, title = "") {
+    # found this useful function here: http://files.meetup.com/1696476/ACFinGGPLOT2Presentation.pdf
+    # the min.lag can be changed to 1 for more visibility, having zero is useful for comparison b/n models
+    qacf <- function(x, conf.level = 0.95, max.lag = NULL, min.lag = 0, title = "") {
       ciline <- qnorm((1 - conf.level)/2)/sqrt(length(x))
       bacf <- acf(x, plot = FALSE, lag.max = max.lag)
       bacfdf <- with(bacf, data.frame(lag, acf))
