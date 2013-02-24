@@ -1,12 +1,21 @@
-#Thank you R bloggers: R.Hyndman, T.Hirsch and klr from TimelyPortfolio for inspiration
-#It was possible to use great plots from ggplot2 package, "multiplot" function and many other fantastic features thanks to R Cookbook
-#http://christophergandrud.blogspot.co.uk/2012_09_01_archive.html
+# I thank R bloggers: R.Hyndman, T.Hirsch and klr from TimelyPortfolio for inspiration
+# It was possible to use great plots from ggplot2 package, "multiplot" function and many other fantastic features 
+# thanks to incredible work of H. Wickham from R-Studio, and R Cookbook
+# http://christophergandrud.blogspot.co.uk/2012_09_01_archive.html
+
+
+# Installing R-INLA on Shiny require dowloading the program from website
+# source("http://www.math.ntnu.no/inla/givemeINLA.R")
+# upgrading
+# inla.upgrade(testing=TRUE)
 
 library(shiny)
 library(INLA)
 library(ggplot2)
 library(reshape2)
 
+
+# sample data 
 df<-read.csv("~/ShinyApps/project2/mortalitydata.csv", header=TRUE, sep=",")
 
 shinyServer(function(input, output) {
@@ -18,7 +27,8 @@ shinyServer(function(input, output) {
     }
   ) 
   
-  
+  # 7 simulations: 6 basic functions and 1 user defined
+  # all should have length equal to the lenght of sample data
   n <- 100
   k <- 21.92
   N <- k*n
