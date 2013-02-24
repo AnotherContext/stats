@@ -15,8 +15,8 @@ Method used to estimate the trends and make predictions on the generated time se
 [Live application hosted at Glimmer](http://glimmer.rstudio.com/incontext/project2) (IE does not correctly render IFRAME below).
 
 
-To download instructions, sample dataset of London mortality rates in 2000-05 or summary in the form of report/ poster/ slides, [click this link](http://glimmer.rstudio.com/incontext/download).
+Instructions, sample dataset of London mortality rates in 2000-05 or summary in the form of report/ poster/ slides, are available for download [here](http://glimmer.rstudio.com/incontext/download).
 
 
-For general Shiny instuctions, please refer to R-Studio tutorial [here](http://rstudio.github.com/shiny/tutorial/).
+For general Shiny instuctions, please refer to [R-Studio tutorial](http://rstudio.github.com/shiny/tutorial/).
 
