@@ -1,10 +1,10 @@
 # I thank R bloggers: R.Hyndman, T.Hirsch and klr from TimelyPortfolio for inspiration
-# It was possible to use great plots from ggplot2 package, "multiplot" function and many other fantastic features 
-# thanks to incredible work of H. Wickham from R-Studio, and R Cookbook
+# It was possible to use plots from ggplot2 package, "multiplot" function and many other fantastic features 
+# thanks to work of H. Wickham from R-Studio, and R Cookbook
 # http://christophergandrud.blogspot.co.uk/2012_09_01_archive.html
 
 
-# Installing R-INLA on Shiny require dowloading the program from website
+# Installing R-INLA on Shiny server requires dowloading the program from website
 # source("http://www.math.ntnu.no/inla/givemeINLA.R")
 # upgrading
 # inla.upgrade(testing=TRUE)
