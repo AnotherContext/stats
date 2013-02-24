@@ -6,9 +6,8 @@ shinyUI(pageWithSidebar(
   # Application title
   headerPanel("Parametric and Non-parametric Models in Forecasting"),
   
-  # Sidebar with controls to select the random distribution type
-  # and number of observations to generate. Note the use of the br()
-  # element to introduce extra vertical spacing
+  # Sidebar with controls selecting starting point, model type, length of horizon, 
+  # and include cond panels for simulations
   sidebarPanel(
     
     helpText("This demo provides a graphical view over forecasting time series with parametric and non-parametric models.",  
@@ -96,10 +95,7 @@ shinyUI(pageWithSidebar(
     
   ),
   
-  # Show a tabset that includes a plot, summary, and table view
-  # of the generated distribution
-  #conditional panel to be introduced: 1panel: intro, 2. general stuff ie acf, pacf, spread, 3. prediction using inla
-  
+  # Show a tabset that includes interactive plots, located in separate panels 
   mainPanel(
     tabsetPanel(
       tabPanel("Introduction",  h5("Project description"), ("This project will compare the performance of parametric and non-parametric time series trend models, by means of simulation. The models to be compared include simple parametric trends such as polynomials and sinusoidal functions, as well as more flexible random walk processes, and finally a real dataset example: London mortality rates for years 1st Jan 2000- 31st Dec 2005."), br(),br(),h5("Method"), ("Integrated Nested Laplace approximation and R-INLA were used to estimate the trends and make predictions on the generated time series data with trends."), HTML("<hr />"), h5("Demo guide"), em(">> Starting point"), br(), ("Choose the starting point from the dataset. The slider's minimum corresponds to 1 year and 1 day value, while its maximum is the dataset size reduced by horizon's maximum value."), br(), br(), em(">> Data type"), br(), ("There are 2 data types: sample dataset of London mortality and simulations with soem 'build-up' noise (Gaussian noise rnorm(N) and integrated noise- random walk- cumsum(rnorm(N)), where N=2192 . After choosing simulation option, additional panel will pop out showing 7 types of time series, in no particular order. These are:"), br(), br(), ("linear function >> 4 + .01* (1:N) + rnorm(N)"), br(), br(), ("sine function >> 5*sin(2*pi*(1:N))+rnorm(N)"), br(), br(),("cosine function >> cos(2*pi*(1:N)/10) + rnorm(N) + cumsum(rnorm(N))"), br(), br(), ("polynomial >> sin(2*pi*(1:N)) + rnorm(N) + cumsum(rnorm(N))"), br(), br(), ("non-linear type1 >> 4 + sqrt(.001*log10(1:N)) + rnorm(N) + cumsum(rnorm(N))"), br(), br(), ("non-linear type2 >> -.05*cos(2*pi*x) -.05*sin(2*pi*x) + cos(4*pi*x) + sin(4*pi*x) + cumsum(cumsum(rnorm(N)))
