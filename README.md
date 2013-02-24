@@ -9,7 +9,7 @@ The aim of this project is to compare performance of parametric and non-parametr
 
 
 
-Method used to estimate the trends and make predictions on the generated time series data was Integrated Nested Laplace Approximation (INLA) implemented through R-INLA program package, available [here](www.r-inla.org).
+Method used to estimate the trends and make predictions on the generated time series data was Integrated Nested Laplace Approximation (INLA) implemented through R-INLA program package, available [here](http://www.r-inla.org).
 
 
 [Live application hosted at Glimmer](http://glimmer.rstudio.com/incontext/project2) (IE does not correctly render IFRAME below).
