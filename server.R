@@ -15,7 +15,7 @@ library(ggplot2)
 library(reshape2)
 
 
-# sample data 
+# sample of real data 
 df<-read.csv("~/ShinyApps/project2/mortalitydata.csv", header=TRUE, sep=",")
 
 shinyServer(function(input, output) {
@@ -27,29 +27,28 @@ shinyServer(function(input, output) {
     }
   ) 
   
-  # 7 simulations: 6 basic functions and 1 user defined
-  # all should have length equal to the lenght of sample data
+  # 7generating  simulations: 6 basic functions and 1 user defined
+  # all should have length equal to the length of sample data
   n <- 100
   k <- 21.92
   N <- k*n
   x <- (1:N)
-  #Gaussian noise
-  #y1 <- rnorm(N)
-  #random walk
+  # Gaussian noise- rnorm(N)
+  # random walk cumsum(rnorm(N))
+  # built up on the above
   #y2 <- cumsum(rnorm(N)) + cumsum(rnorm(N)) + rnorm(N)
   sim1<- 4 + .01* (1:N)+ rnorm(N)
   sim2<- 5*sin(2*pi*(1:N))+rnorm(N)
   sim3<- cos(2*pi*(1:N)/10) + rnorm(N) + cumsum(rnorm(N))
   sim4<- sin(2*pi*(1:N)) + rnorm(N) + cumsum(rnorm(N))
   sim5<- 4 + sqrt(.001*log10(1:N)) + rnorm(N) + cumsum(rnorm(N))
-  # With a seasonal component/ non linear
   sim6 <- -.05*cos(2*pi*x) -.05*sin(2*pi*x) + cos(4*pi*x) + sin(4*pi*x) + cumsum(cumsum(rnorm(N)))  
-  #plot(x, data.sim)
-  #sim_text <- input$sim_func
+  # plot(x, data.sim)
+  # sim_text <- input$sim_func
   
-  
+  # dataframe of all 
   data.orig <- data.frame(df[,2], sim1, sim2, sim3, sim4, sim5, sim6)
-  #head(data.set, data.sim)
+  # head(data.set, data.sim)
   
   user_func <- reactive(function(){
     
@@ -100,8 +99,8 @@ shinyServer(function(input, output) {
     #h<-100
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
-    #Y <- data.orig[b:2192, 1] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
-    
+    #Y <- data.orig[b:2192, 1] 
+
     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
