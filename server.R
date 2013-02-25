@@ -31,16 +31,11 @@ shinyServer(function(input, output) {
   k <- 21.92
   N <- k*n
   x <- (1:N)
-  #Gaussian noise
-  #y1 <- rnorm(N)
-  #random walk
-  #y2 <- cumsum(rnorm(N)) + cumsum(rnorm(N)) + rnorm(N)
   sim1<- 4 + .01* (1:N)+ rnorm(N)
   sim2<- 5*sin(2*pi*(1:N))+rnorm(N)
   sim3<- cos(2*pi*(1:N)/10) + rnorm(N) + cumsum(rnorm(N))
   sim4<- sin(2*pi*(1:N)) + rnorm(N) + cumsum(rnorm(N))
   sim5<- 4 + sqrt(.001*log10(1:N)) + rnorm(N) + cumsum(rnorm(N))
-  # With a seasonal component/ non linear
   sim6 <- -.05*cos(2*pi*x) -.05*sin(2*pi*x) + cos(4*pi*x) + sin(4*pi*x) + cumsum(cumsum(rnorm(N)))  
   #plot(x, data.sim)
   #sim_text <- input$sim_func
