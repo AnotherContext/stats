@@ -1,9 +1,12 @@
 Parametric and Non-parametric Models in Forecasting
 ========================================================
-<hr /> 
+<br />
+<br />
 
 Overview
 --------------------------------------------------------
+<br />
+<br />
 
 This is an adaptation of a view over forecasting time series with parametric and non-parametric models through number of interactive plots, with data supplied by R through Shiny in real- time. 
 
@@ -18,6 +21,8 @@ Method used to estimate the trends and make predictions on the generated time se
 
 Resources
 --------------------------------------------------------
+<br />
+<br />
 
 [Live application hosted at Glimmer](http://glimmer.rstudio.com/incontext/project2) (IE does not correctly render IFRAME).
 
