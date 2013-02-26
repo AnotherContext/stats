@@ -1,6 +1,5 @@
 Parametric and Non-parametric Models in Forecasting
 ========================================================
-<br />
 This is an adaptation of a view over forecasting time series with parametric and non-parametric models through number of interactive plots, with data supplied by R through Shiny in real- time. 
 
 
