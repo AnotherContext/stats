@@ -18,8 +18,7 @@ Method used to estimate the trends and make predictions on the generated time se
 Instructions, sample dataset of London mortality rates in 2000-05 or summary in the form of report/ poster/ slides, are available for download [here](http://glimmer.rstudio.com/incontext/download).
 
 
-Snapshot in the form of poster is avaiable at [here](http://issuu.com/AnotherContext/docs/prediction_of_time_series_trends?mode=window).
-
+Snapshot in the form of poster is avaiable at [here](http://issuu.com/anothercontext/docs/prediction_of_time_series?mode=window).
 
 For general Shiny instuctions, please refer to [R-Studio tutorial](http://rstudio.github.com/shiny/tutorial/).
 
