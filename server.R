@@ -26,7 +26,7 @@ shinyServer(function(input, output) {
     }
   ) 
   
-
+  set.seed(1)
   n <- 100
   k <- 21.92
   N <- k*n
@@ -34,7 +34,7 @@ shinyServer(function(input, output) {
   sim1<- 4 + .01* (1:N)+ rnorm(N)
   sim2<- 5*sin(2*pi*(1:N))+rnorm(N)
   sim3<- cos(2*pi*(1:N)/10) + rnorm(N) + cumsum(rnorm(N))
-  sim4<- sin(2*pi*(1:N)) + rnorm(N) + cumsum(rnorm(N))
+  sim4<- (.001*(1:N))^2 + rnorm(N) + cumsum(rnorm(N))
   sim5<- 4 + sqrt(.001*log10(1:N)) + rnorm(N) + cumsum(rnorm(N))
   sim6 <- -.05*cos(2*pi*x) -.05*sin(2*pi*x) + cos(4*pi*x) + sin(4*pi*x) + cumsum(cumsum(rnorm(N)))  
   #plot(x, data.sim)
