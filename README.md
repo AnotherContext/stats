@@ -24,3 +24,4 @@ Snapshot in the form of poster is avaiable at [here](http://issuu.com/anothercon
 
 For general Shiny instuctions, please refer to [R-Studio tutorial](http://rstudio.github.com/shiny/tutorial/).
 
+[My other projects](http://anothercontext.co.uk/).
