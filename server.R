@@ -7,9 +7,10 @@
 # source("http://www.math.ntnu.no/inla/givemeINLA.R")
 # upgrading
 # inla.upgrade(testing=TRUE)
-
 # other packages can be installed directly from CRAN
 
+
+#not all the functionality is used in the actual application
 library(shiny)
 library(INLA)
 library(ggplot2)
@@ -26,43 +27,56 @@ shinyServer(function(input, output) {
     }
   ) 
   
+
+  #data simulations
   set.seed(1)
   n <- 100
   k <- 21.92
   N <- k*n
   x <- (1:N)
+  #Gaussian noise
+  #y1 <- rnorm(N)
+  #random walk
+  #y2 <- cumsum(rnorm(N)) + cumsum(rnorm(N)) + rnorm(N)
   sim1<- 4 + .01* (1:N)+ rnorm(N)
   sim2<- 5*sin(2*pi*(1:N))+rnorm(N)
   sim3<- cos(2*pi*(1:N)/10) + rnorm(N) + cumsum(rnorm(N))
-  sim4<- (.001*(1:N))^2 + rnorm(N) + cumsum(rnorm(N))
+  sim4<- 0.01 + 0.005*(1:N) + (.001*(1:N))^2 + rnorm(N) 
   sim5<- 4 + sqrt(.001*log10(1:N)) + rnorm(N) + cumsum(rnorm(N))
-  sim6 <- -.05*cos(2*pi*x) -.05*sin(2*pi*x) + cos(4*pi*x) + sin(4*pi*x) + cumsum(cumsum(rnorm(N)))  
-  #plot(x, data.sim)
-  #sim_text <- input$sim_func
+  sim6<- 0.5 + 0.5*sin(2*pi*x/365) + 0.5*cos(2*pi*x/365) + 0.8*cos(4*pi*x/365) + 0.8*sin(4*pi*x/365) + cos(8*pi*x/365)   + rnorm(N) #+ sin(8*pi*x/365)
+  #sim6 <- 0.01 + 0.005*(1:N) + (0.001 *(1:N))^2 + 0.5*sin(2*pi*x/365) + 0.5*cos(2*pi*x/365) + cos(4*pi*x/365) + sin(4*pi*x/365) + rnorm(N)
+ 
+  data.orig <- data.frame(df[,2], sim1, sim2, sim3, sim4, sim5, sim6, df[,1]) 
 
+  
+  #functions generating whole numbers and extracting elements from substring-> 
+  #generation of yearly axis based no dynamically changing starting value and horizon
 
-  data.orig <- data.frame(df[,2], sim1, sim2, sim3, sim4, sim5, sim6)
-  #head(data.set, data.sim)
-
-   user_func <- reactive(function(){
-     
+  is.wholenumber <-
+    function(x, tol = .Machine$double.eps^0.5)  
+      abs(x - round(x)) < tol
+  
+  
+  substrRight <- function(x, n){
+    substr(x, nchar(x)-n+1, nchar(x))
+  }
+  
+   #function chosen by the user
+   user_func <- reactive(function(){  
       userchoice <- eval(parse(text=input$userchoice))
       
    })
   
-  
+   #simulation or real dataset 
    func <- reactive(function(){
-     
-    func_type <- switch(input$func_type,
+      func_type <- switch(input$func_type,
                         sim="sim",
                         d_set="d_set")   
-     
    })
   
-  
+  #if simulation was chosen, then 6 types of sims will popout 
   simulation_func <- reactive(function(){
-    
-    sim_func <- switch(input$sim_func,
+     sim_func <- switch(input$sim_func,
                        sim1="linear function",
                        sim2="sine function",
                        sim3="cosine function",
@@ -72,27 +86,24 @@ shinyServer(function(input, output) {
     
   })
     
-
+   #model type
    data <- reactive(function(){  
-    
-    f_type <- switch(input$f_type,
+     f_type <- switch(input$f_type,
                    rw1 = "rw1",
                    rw2 = "rw2",
                    para = "para")
-    
-   # f_type(input$h)
   })
   
-  
-  harm <- reactive(function(){
-    
-    harm_func <- switch(input$harm_fit, 
+   #harmonic either automatic or user defined
+   harm <- reactive(function(){
+      harm_func <- switch(input$harm_fit, 
                         auto = "auto",
                         harm_user_def = "harm_user_def")
   })
   
   
-  
+   #reactive function plotting data, fitted model, predictions and credible interval 
+   #taking the previously chosen settings and user def. functions
    output$prediction <- reactivePlot(function(){
     func_type <- input$func_type
     f_type <- input$f_type
@@ -100,13 +111,15 @@ shinyServer(function(input, output) {
     harm_func <- input$harm_fit
     h <- input$h
     b <- input$b
-    #b <- 1000
+    
+    #b <- 1094
     #h<-100
+    
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
-    #Y <- data.orig[b:2192, 1] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
-    
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+   # Y <- data.orig[b:2192, 3] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+     
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -114,6 +127,8 @@ shinyServer(function(input, output) {
     time.predict <- 1:n.predict
     time.hor<- 1: (n.predict-h)
     time.predict_p <- (n.predict-h+1):n.predict
+    axis_date<-data.frame(b:2192, data.orig[b:2192, 8])
+    
     
     #harmonics fitting
     # sin.year.predict <- 1000*sin(2*pi * time.predict/365)
@@ -133,24 +148,28 @@ shinyServer(function(input, output) {
      
       }
     
-    
+    #estimation with INLA: modelling with rw1, rw1 and parametirc model, calc. credible intervals and predcitions 
     data.predict <- data.frame(Y.predict=Y.predict, time.predict=time.predict, sin.year.predict=sin.year.predict, cos.year.predict=cos.year.predict)
     formula <- Y.predict ~ time.predict + sin.year.predict + cos.year.predict
     model.para<- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025, .1, .9, .975))
     lower95.para<- model.para$summary.fitted.values[time.predict_p, 3]
-    lower80.para<- model.para$summary.fitted.values[time.predict_p, 4]
-    upper80.para<- model.para$summary.fitted.values[time.predict_p, 5]
-    upper95.para<- model.para$summary.fitted.values[time.predict_p ,6]
-    plot(time.predict, Y.predict, col="darkseagreen", pch=20, ylab="Dataset values", xlab="Time")
+    #lower80.para<- model.para$summary.fitted.values[time.predict_p, 4]
+    #upper80.para<- model.para$summary.fitted.values[time.predict_p, 5]
+    upper95.para<- model.para$summary.fitted.values[time.predict_p ,6]#darkseagreen
+    plot(time.predict, Y.predict, col="grey80", pch=20, lwd=1, ylab="Dataset values", xlab="Time in years", xaxt="n")#, cex.axis=1.8, cex.lab=1.8)
     lines(time.hor, model.para$summary.fitted.values[time.hor ,1], col="grey60")
-    legend("topleft",legend=c("Posterior mean for chosen fitting type", "Posterior mean for chosen horizon", "95% Credible intervals", "80% Credible intervals"), col=c("palevioletred2","red", "lightskyblue1", "lightskyblue"),lty=1, lwd=2)               
+    abline(v=ifelse(is.wholenumber(axis_date[,1]/365), which(is.wholenumber(axis_date[,1]/365)), ""), col="grey40", lwd=0.5)
+    #abline(v=0, col="grey60", lwd=0.5)
+    axis(side=1, at=ifelse(is.wholenumber(axis_date[,1]/365), which(is.wholenumber(axis_date[,1]/365)),""), labels=as.numeric(substrRight(ifelse(is.wholenumber(axis_date[,1]/365), as.character(axis_date[which(is.wholenumber(axis_date[,1]/365)),2]), 0),4))+1)
+    legend("topleft",legend=c("Posterior mean for chosen fitting type", "Posterior mean for chosen horizon", "95% Credible intervals"), col=c("palevioletred2","red", "lightskyblue"),lty=1, lwd=2)#, cex=1.4)               
+  
     
     data.predict <- data.frame(Y.predict=Y.predict, time.predict=time.predict)
     formula <- Y.predict ~ f(time.predict, model="rw1", cyclic=FALSE)
     model.rw1<- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025, .1, .9, .975))
     lower95.rw1<- model.rw1$summary.fitted.values[time.predict_p, 3]
-    lower80.rw1<- model.rw1$summary.fitted.values[time.predict_p, 4]
-    upper80.rw1<- model.rw1$summary.fitted.values[time.predict_p, 5]
+    #lower80.rw1<- model.rw1$summary.fitted.values[time.predict_p, 4]
+    #upper80.rw1<- model.rw1$summary.fitted.values[time.predict_p, 5]
     upper95.rw1<- model.rw1$summary.fitted.values[time.predict_p ,6]
     lines(time.hor, model.rw1$summary.fitted.values[time.hor ,1], col="grey60")
     
@@ -158,41 +177,43 @@ shinyServer(function(input, output) {
     formula <- Y.predict ~ f(time.predict, model="rw2", cyclic=FALSE)
     model.rw2<- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025, .1, .9, .975))
     lower95.rw2<- model.rw2$summary.fitted.values[time.predict_p, 3]
-    lower80.rw2<- model.rw2$summary.fitted.values[time.predict_p, 4]
-    upper80.rw2<- model.rw2$summary.fitted.values[time.predict_p, 5]
+    #lower80.rw2<- model.rw2$summary.fitted.values[time.predict_p, 4]
+    #upper80.rw2<- model.rw2$summary.fitted.values[time.predict_p, 5]
     upper95.rw2<- model.rw2$summary.fitted.values[time.predict_p ,6]
     lines(time.hor, model.rw2$summary.fitted.values[time.hor,1], col="grey60")
     
     
     if(f_type=="para"){
     
-    polygon(c(time.predict_p, rev(time.predict_p)), c(upper95.para, rev(lower95.para)), col="lightskyblue1", border="lightskyblue1")
-    polygon(c(time.predict_p, rev(time.predict_p)), c(upper80.para, rev(lower80.para)), col="lightskyblue", border="lightskyblue")
+    polygon(c(time.predict_p, rev(time.predict_p)), c(upper95.para, rev(lower95.para)), col="lightskyblue", border="lightskyblue1")
+    #polygon(c(time.predict_p, rev(time.predict_p)), c(upper80.para, rev(lower80.para)), col="lightskyblue", border="lightskyblue")
     points(time.predict_p, Y[time.predict_p], col="deepskyblue4", pch=20)
     lines(time.hor, model.para$summary.fitted.values[time.hor,1], col="palevioletred2", lwd=3)
     lines(time.predict_p, model.para$summary.fitted.values[time.predict_p ,1], col="red", lwd=3)
-    
+    title("Parametric Model")
    
     } else if(f_type=="rw1") {
     
-     polygon(c(time.predict_p, rev(time.predict_p)), c(upper95.rw1, rev(lower95.rw1)), col="lightskyblue1", border="lightskyblue1")
-     polygon(c(time.predict_p, rev(time.predict_p)), c(upper80.rw1, rev(lower80.rw1)), col="lightskyblue", border="lightskyblue")
+     polygon(c(time.predict_p, rev(time.predict_p)), c(upper95.rw1, rev(lower95.rw1)), col="lightskyblue", border="lightskyblue1")
+     #polygon(c(time.predict_p, rev(time.predict_p)), c(upper80.rw1, rev(lower80.rw1)), col="lightskyblue", border="lightskyblue")
      points(time.predict_p, Y[time.predict_p], col="deepskyblue4", pch=20)
      lines(time.hor, model.rw1$summary.fitted.values[time.hor,1], col="palevioletred2", lwd=3)
      lines(time.predict_p, model.rw1$summary.fitted.values[time.predict_p ,1], col="red", lwd=3)
+     title("First-Order Random Walk Model")
      
     } else {
       
-      polygon(c(time.predict_p, rev(time.predict_p)), c(upper95.rw2, rev(lower95.rw2)), col="lightskyblue1", border="lightskyblue1")
-      polygon(c(time.predict_p, rev(time.predict_p)), c(upper80.rw2, rev(lower80.rw2)), col="lightskyblue", border="lightskyblue")
-      points(time.predict_p, Y[time.predict_p], col="lightsteelblue4", pch=20)
+      polygon(c(time.predict_p, rev(time.predict_p)), c(upper95.rw2, rev(lower95.rw2)), col="lightskyblue", border="lightskyblue1")
+      #polygon(c(time.predict_p, rev(time.predict_p)), c(upper80.rw2, rev(lower80.rw2)), col="lightskyblue", border="lightskyblue")
+      points(time.predict_p, Y[time.predict_p], col="deepskyblue4", pch=20)
       lines(time.hor, model.rw2$summary.fitted.values[time.hor ,1], col="palevioletred2", lwd=3)
       lines(time.predict_p, model.rw2$summary.fitted.values[time.predict_p ,1], col="red", lwd=3)
-     
+      title("Second-Order Random Walk Model")
       }
     
    })
     
+    #presenting the results numerically by producing table 
     output$prediction_summary <- reactiveTable(function() {
       func_type <- input$func_type
       f_type <- input$f_type
@@ -204,9 +225,9 @@ shinyServer(function(input, output) {
       #h<-100
       userchoice<-eval(parse(text=input$userchoice))
       data.orig<-cbind(data.orig, userchoice)
-      #Y <- data.orig[b:2192, 1] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+      #Y <- data.orig[b:2192, 1] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
       
-      Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+      Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
       n <- length(Y)
       Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
       #Y.predict <- c(Y, rep(NA, h))
@@ -256,7 +277,7 @@ shinyServer(function(input, output) {
     
   })
    
-
+   #reactive summary of hyperparameters sing inla() functionality
    output$hyperpar_summary <- reactivePrint(function() {
      func_type <- input$func_type
      f_type <- input$f_type
@@ -269,7 +290,7 @@ shinyServer(function(input, output) {
      userchoice<-eval(parse(text=input$userchoice))
      data.orig<-cbind(data.orig, userchoice)
      
-     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
      n <- length(Y)
      Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
      #Y.predict <- c(Y, rep(NA, h))
@@ -311,7 +332,8 @@ shinyServer(function(input, output) {
        }
      
    })
-   
+
+   #model summary
    output$fixed_summary <- reactivePrint(function() {
      func_type <- input$func_type
      f_type <- input$f_type
@@ -324,7 +346,7 @@ shinyServer(function(input, output) {
      userchoice<-eval(parse(text=input$userchoice))
      data.orig<-cbind(data.orig, userchoice)
      
-     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
      n <- length(Y)
      Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
      #Y.predict <- c(Y, rep(NA, h))
@@ -367,10 +389,7 @@ shinyServer(function(input, output) {
      
    })
   
-   
-    
-    
-  
+  #cal. forecasting errors and presenting them in a reactive table 
   output$prediction_errors <- reactiveTable(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -383,7 +402,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -432,30 +451,45 @@ shinyServer(function(input, output) {
       diff.rw2<- model.rw2$summary.fitted[time.predict_p,1] -Y[time.predict_p]
       #diff.rw2_m <- (Y[time.predict_p]-model.rw2$summary.fitted[time.predict_p,1])/Y[time.predict_p]
          
-      for(i in 2:h){
+        bias.para<-sum(diff.para[2:h])/h
+        mae.para<-sum(abs(diff.para[2:h]))/h
+        rmse.para<-sum(sqrt((diff.para[2:h])^2))/h
+        mape.para<-sum(abs(diff.para[2:h]/Y[time.predict_p]))/h
         
-        bias.para[i]<-sum((diff.para[2:i])/i)
-        mape.para[i]<-sum(abs(diff.para[2:i])/i)
-        rmse.para[i]<-sqrt(sum((diff.para[2:i])^2)/ i)
+        bias.rw1<-sum(diff.rw1[2:h])/h
+        mae.rw1<-sum(abs(diff.rw1[2:h]))/h
+        rmse.rw1<-sum(sqrt((diff.rw1[2:h])^2))/h
+        mape.rw1<-sum(abs(diff.rw1[2:h]/Y[time.predict_p]))/h
         
-        #mape.rw1[i]<-sum(abs(diff.rw1_m[1:i]))*100/n
-        bias.rw1[i]<-sum((diff.rw1[2:i])/i)
-        mape.rw1[i]<-sum(abs(diff.rw1[2:i])/i)
-        rmse.rw1[i]<-sqrt(sum((diff.rw1[2:i])^2)/ i)
-        
-        #mape.rw2[i]<-sum(abs(diff.rw2_m[1:i]))*100/n
-        bias.rw2[i]<-sum((diff.rw2[2:i])/i)
-        mape.rw2[i]<-sum(abs(diff.rw2[2:i])/i)
-        rmse.rw2[i]<-sqrt(sum((diff.rw2[2:i])^2) / i)
-  
-      }
-                   
-      data.frame("True Value"=Y[time.predict_p], "RW1 Forecast"=model.rw1$summary.fitted[time.predict_p,1], "RW2 Forecast"=model.rw2$summary.fitted[time.predict_p,1], "PRM Forecast"=model.para$summary.fitted[time.predict_p,1], "RW1 Bias"=bias.rw1, "RW2 Bias"=bias.rw2, "PRM Bias"=bias.para, "RW1 Rmse"=rmse.rw1, "RW2 Rmse"=rmse.rw2, "PRM Rmse"=rmse.para, "RW1 Mape"=mape.rw1, "RW2 Mape"=mape.rw2, "PRM Mape"=mape.para )
-     
+        bias.rw2<-sum(diff.rw2[2:h])/h
+        mae.rw2<-sum(abs(diff.rw2[2:h]))/h
+        rmse.rw2<-sum(sqrt((diff.rw2[2:h])^2))/h
+        mape.rw2<-sum(abs(diff.rw2[2:h]/Y[time.predict_p]))/h
+    
+      errors<-matrix(0, nrow=4, ncol=3) 
+      errors[1, 1] <- bias.rw1
+      errors[1, 2] <- bias.rw2 
+      errors[1, 3] <- bias.para 
+      errors[2, 1] <- mae.rw1 
+      errors[2, 2] <- mae.rw2
+      errors[2, 3] <- mae.para
+      errors[3, 1] <- rmse.rw1
+      errors[3, 2] <- rmse.rw2 
+      errors[3, 3] <- rmse.para
+      errors[4, 1] <- mape.rw1 
+      errors[4, 2] <- mape.rw2
+      errors[4, 3] <- mape.para
+      rownames(errors) <- c("BIAS", "MAE", "RMSE", "MAPE")
+      colnames(errors) <- c("RW1", "RW2", "PRM")
+    
+      errors
+    
+        #data.frame("True Value"=Y[time.predict_p], "RW1 Forecast"=model.rw1$summary.fitted[time.predict_p,1], "RW2 Forecast"=model.rw2$summary.fitted[time.predict_p,1], "PRM Forecast"=model.para$summary.fitted[time.predict_p,1], "RW1 Bias"=bias.rw1, "RW2 Bias"=bias.rw2, "PRM Bias"=bias.para, "RW1 Rmse"=rmse.rw1, "RW2 Rmse"=rmse.rw2, "PRM Rmse"=rmse.para, "RW1 Mape"=mape.rw1, "RW2 Mape"=mape.rw2, "PRM Mape"=mape.para )
+        #data.frame("RW1 Bias"=bias.rw1, "RW2 Bias"=bias.rw2, "PRM Bias"=bias.para, "RW1 Rmse"=rmse.rw1, "RW2 Rmse"=rmse.rw2, "PRM Rmse"=rmse.para, "RW1 Mape"=mape.rw1, "RW2 Mape"=mape.rw2, "PRM Mape"=mape.para)
   })
   
   
-  
+  #reactive plots of rmse and mae in facets and box plots of the errors, inluding distr
   output$error.facets <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -467,7 +501,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -502,34 +536,35 @@ shinyServer(function(input, output) {
     formula <- Y.predict ~ f(time.predict, model="rw2", cyclic=FALSE)
     model.rw2 <- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025,0.95))
     
-    mape.para  <-mape.rw1 <- mape.rw2 <- matrix(NA,n)
-    rmse.para  <-rmse.rw1 <- rmse.rw2 <- matrix(NA,n)
+    mae.para  <-mae.rw1 <- mae.rw2 <- matrix(NA,h)
+    rmse.para  <-rmse.rw1 <- rmse.rw2 <- matrix(NA,h)
     #bias.para  <-bias.rw1 <- bias.rw2 <- matrix(NA,n)
 
   #  diff.para_m <- (Y[time.predict]-model.para$summary.fitted[time.predict,1])/Y[time.predict]
   #  diff.rw1_m <- (Y[time.predict]-model.rw1$summary.fitted[time.predict,1])/Y[time.predict]
   #  diff.rw2_m <- (Y[time.predict]-model.rw2$summary.fitted[time.predict,1])/Y[time.predict]
-    diff.para<- model.para$summary.fitted[time.predict,1] - Y[time.predict]
-    diff.rw1 <- model.rw1$summary.fitted[time.predict,1] - Y[time.predict]
-    diff.rw2 <- model.rw2$summary.fitted[time.predict,1] - Y[time.predict]
+    diff.para<- -model.para$summary.fitted[time.predict_p,1] + Y[time.predict_p]
+    diff.rw1 <- -model.rw1$summary.fitted[time.predict_p,1] + Y[time.predict_p]
+    diff.rw2 <- -model.rw2$summary.fitted[time.predict_p,1] + Y[time.predict_p]
     
     
-    for(i in 2:n) {
-       
-      #mape.para[i]<-sum(abs(diff.para_m[1:i]))*100/n
-      #bias.para[i]<-((sum(diff.para[1:i])^2)/i)
-      mape.para[i]<-sum(abs(diff.para[2:i])/i)
-      rmse.para[i]<-sqrt(sum((diff.para[2:i])^2) / i)
-
-      #mape.rw1[i]<-sum(abs(diff.rw1_m[1:i]))*100/n
-      #bias.rw1[i]<-((sum(diff.rw1[1:i])^2)/i)
-      mape.rw1[i]<-sum(abs(diff.rw1[2:i])/i)
-      rmse.rw1[i]<-sqrt(sum((diff.rw1[2:i])^2) / i)
+    for(i in 2:h) {
       
-      #mape.rw2[i]<-sum(abs(diff.rw2_m[1:i]))*100/n
+      mae.para[i]<-sum(abs(diff.para[2:i])/i)
+      mae.rw1[i]<-sum(abs(diff.rw1[2:i])/i)
+      mae.rw2[i]<-sum(abs(diff.rw2[2:i])/i)
+      
+      #bias.para[i]<-((sum(diff.para[1:i])^2)/i)
+      #mape.para[i]<-sum(abs(diff.para[2:i]/ Y[time.predict])*100/i)
+      rmse.para[i]<-sum(sqrt((diff.para[2:i])^2))/i
+
+      #bias.rw1[i]<-((sum(diff.rw1[1:i])^2)/i)
+      #mape.rw1[i]<-sum(abs(diff.rw1[2:i]/ Y[time.predict])*100/i)
+      rmse.rw1[i]<-sum(sqrt((diff.rw1[2:i])^2))/i
+      
       #bias.rw2[i]<-((sum(diff.rw2[1:i])^2)/i)
-      mape.rw2[i]<-sum(abs(diff.rw2[2:i])/i)
-      rmse.rw2[i]<-sqrt(sum((diff.rw2[2:i])^2) / i)
+      #mape.rw2[i]<-sum(abs(diff.rw2[2:i]/ Y[time.predict])*100/i)
+      rmse.rw2[i]<-sum(sqrt((diff.rw2[2:i])^2))/i
       
     }
     
@@ -538,21 +573,21 @@ shinyServer(function(input, output) {
     #bias_g<-cbind(bias_m, error=rep("BIAS", 3*n))
     rmse<-data.frame(RW1= rmse.rw1, RW2= rmse.rw2, PRM=rmse.para)#, error=rep("rmse", h))
     rmse_m<-melt(rmse)
-    rmse_g<-cbind(rmse_m, error=rep("RMSE", 3*n))
-    mape<-data.frame(RW1= mape.rw1, RW2= mape.rw2, PRM=mape.para)#, error=rep("mape", h))
-    mape_m<-melt(mape)
-    mape_g<-cbind(mape_m, error=rep("MAPE", 3*n))
-    horz <- data.frame(horz=rep(1:n, 6))
+    rmse_g<-cbind(rmse_m, error=rep("RMSE", 3*h))
+    mae<-data.frame(RW1= mae.rw1, RW2= mae.rw2, PRM=mae.para)#, error=rep("mape", h))
+    mae_m<-melt(mae)
+    mae_g<-cbind(mae_m, error=rep("MAE", 3*h))
+    horz <- data.frame(horz=rep(1:h, 6))
     
-    err1<- rbind(rmse_g, mape_g)
+    err1<- rbind(mae_g, rmse_g)
     err<- data.frame(err1)
     err<-  cbind(err, horz)
      #err_bias<- cbind(bias_g, horz=rep(1:n, 3))
 
     par(mar=c(0,0,0,0))
     g1 <- ggplot(err, aes(horz, value, col=variable))+ geom_line() + facet_grid(. ~ error) +
-      ylab("Error values") + xlab("Time") + geom_text(data=err[err$horz==n,], aes(label= variable), hjust=0.5, vjust=0, size=3) + 
-      geom_vline(xintercept = n-h, color = "black", linetype="dashed", size = 0.3) + 
+      ylab("Error values") + xlab("Forecast horizon in days") + geom_text(data=err[err$horz==h,], aes(label= variable), hjust=0.5, vjust=0, size=3) + 
+     # geom_vline(xintercept = n-h, color = "black", linetype="dashed", size = 0.3) + 
       theme(legend.position="none")
     
     err_lim <- boxplot.stats(err$value)$stats[c(1, 5)]
@@ -602,7 +637,7 @@ shinyServer(function(input, output) {
   })
   
   
-  
+  #reactive plots of st.dev and bias and box plots incl.distr.
   output$sd.facets <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -616,7 +651,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -652,25 +687,33 @@ shinyServer(function(input, output) {
     formula <- Y.predict ~ f(time.predict, model="rw2", cyclic=FALSE)
     model.rw2 <- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025,0.95))
     
-    bias.para  <-bias.rw1 <- bias.rw2 <- matrix(NA,n)
+    bias.para  <-bias.rw1 <- bias.rw2 <- matrix(NA,h)
+    #mae.para  <-mae.rw1 <- mae.rw2 <- matrix(NA,n)
     
-    diff.para<- model.para$summary.fitted[time.predict,1]-Y[time.predict]
-    diff.rw1 <- model.rw1$summary.fitted[time.predict,1]-Y[time.predict]
-    diff.rw2 <- model.rw2$summary.fitted[time.predict,1]-Y[time.predict]
+    diff.para<- model.para$summary.fitted[time.predict_p,1]-Y[time.predict_p]
+    diff.rw1 <- model.rw1$summary.fitted[time.predict_p,1]-Y[time.predict_p]
+    diff.rw2 <- model.rw2$summary.fitted[time.predict_p,1]-Y[time.predict_p]
     
     
-    for(i in 2:n){
+    for(i in 2:h){
       bias.para[i]<-sum(diff.para[2:i])/i
       bias.rw1[i]<-sum(diff.rw1[2:i])/i
       bias.rw2[i]<-sum(diff.rw2[2:i])/i
+      
+     # mae.para[i]<-sum(abs(diff.para[2:i])/i)
+     # mae.rw1[i]<-sum(abs(diff.rw1[2:i])/i)
+     # mae.rw2[i]<-sum(abs(diff.rw2[2:i])/i)
+     
     }
     
     bias<-data.frame(RW1= bias.rw1, RW2= bias.rw2, PRM=bias.para)# error=rep("bias", h))
     bias_m<-melt(bias)
-    bias_g<-cbind(bias_m, error=rep("BIAS", 3*n))
-    err_bias<- cbind(bias_g, horz=rep(1:n, 3))
+    bias_g<-cbind(bias_m, error=rep("BIAS", 3*h))
+    err_bias<- cbind(bias_g, horz=rep(1:h, 3))
     
-    sd<- data.frame(RW1=model.rw1$summary.fitted[ time.predict,2], RW2= model.rw2$summary.fitted[time.predict,2], PRM=model.para$summary.fitted[time.predict,2])
+    sd<- data.frame(RW1=model.rw1$summary.fitted[time.predict,2], RW2= model.rw2$summary.fitted[time.predict,2], PRM=model.para$summary.fitted[time.predict,2])
+    
+    #sd<-data.frame(RW1= sd.rw1, RW2= sd.rw2, PRM=sd.para)# error=rep("bias", h))
     sd_m<-melt(sd)
     sd_g<-cbind(sd_m, error=rep("SD", 3*n))
     err_sd<-cbind(sd_g, horz=rep(1:n, 3))
@@ -681,14 +724,14 @@ shinyServer(function(input, output) {
     bias_lim <- boxplot.stats(err_bias$value)$stats[c(1, 5)]
    
     g1 <- ggplot(err_sd, aes(horz, value, col=variable))+ geom_line() + facet_grid(. ~ error) +
-      ylab("SD values") + xlab("Time") + geom_text(data=err_sd[err_sd$horz==n,], aes(label= variable), hjust=1, vjust=0, size=3) + 
-      theme(legend.position="none") +
-      geom_vline(xintercept = n-h, color = "black", linetype="dashed", size = 0.3)
+      ylab("SD values") + xlab("Time in days") + geom_text(data=err_sd[err_sd$horz==n,], aes(label= variable), hjust=1, vjust=0, size=3) + 
+      theme(legend.position="none") 
+      #geom_vline(xintercept = n-h, color = "black", linetype="dashed", size = 0.3)
 
     g2 <- ggplot(err_bias, aes(horz, value, col=variable))+ geom_line() + facet_grid(. ~ error) +
-      ylab("Bias values") + xlab("Time") + geom_text(data=err_bias[err_bias$horz==n,], aes(label= variable), hjust=1, vjust=0, size=3) + 
-      theme(legend.position="none") +
-      geom_vline(xintercept = n-h, color = "black", linetype="dashed", size = 0.3)
+      ylab("Bias values") + xlab("Forecast horizon in days") + geom_text(data=err_bias[err_bias$horz==h,], aes(label= variable), hjust=1, vjust=0, size=3) + 
+      theme(legend.position="none") 
+      #geom_vline(xintercept = n-h, color = "black", linetype="dashed", size = 0.3)
     
     # scale g3&g4 limits based on sd_lim and bias_lim, source: http://stackoverflow.com/questions/5677885/ignore-outliers-in-ggplot2-boxplot
     g3 <- ggplot(err_sd, aes(factor(variable), value)) + geom_boxplot(aes(fill=variable), colour="grey30" )+ 
@@ -735,11 +778,12 @@ shinyServer(function(input, output) {
       }
     }
     
-    multiplot(g1, g3, g2, g4, cols=2)
+    multiplot(g1, g3, g2, g4,cols=2)
   })
   
  
-    
+  #calc. residuals and plotting 2 rows of plots: upper with res. of observed data and predicted data, separated by 
+  #a dashed line, the lower one with res. only for prediction 
   output$res.facets <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -846,12 +890,15 @@ shinyServer(function(input, output) {
     
     par(mar=c(0,0,0,0))
     g1 <- ggplot(res.all_g, aes(id, value, col=variable)) + geom_line() + facet_grid(.~ variable) +
-      ylab("Res for All Time Values") + xlab("Time") + theme(legend.position="none") +
+      ylab("Res for All Time Values") + xlab("Time in days") + #theme(legend.position="none") + 
       geom_hline(yintercept = 0, color = "black", linetype="dashed", size = 0.3) +
       geom_vline(xintercept = n-h, color = "black", linetype="dashed", size = 0.3)
+      #theme_grey(base_size = 18) +  opts(axis.title.x=theme_text(size=16))
+      
     g2 <- ggplot(res.h_g, aes(id, value, col=variable)) + geom_line() + facet_grid(.~ variable) +
-      ylab("Res for Horizon Values") + xlab("Horizon") + theme(legend.position="none") +
+      ylab("Res for Horizon") + xlab("Horizon in days") + #theme(legend.position="none") + 
       geom_hline(yintercept = 0, color = "black", linetype="dashed", size = 0.3)
+      #theme_grey(base_size = 18) +  opts(axis.title.x=theme_text(size=16))
     
     
     
@@ -860,7 +907,7 @@ shinyServer(function(input, output) {
   
   
   
-  
+  #reactive acf plots for observed data
   output$acf.facets <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -964,7 +1011,8 @@ shinyServer(function(input, output) {
     
     #http://files.meetup.com/1696476/ACFinGGPLOT2Presentation.pdf
     qacf <- function(x, conf.level = 0.95, max.lag = NULL, min.lag = 0, title = "") {
-      ciline <- qnorm((1 - conf.level)/2)/sqrt(length(x))
+      #ciline <- qnorm((1 - conf.level)/2)/sqrt(length(x))
+      ciline <- 1.96/sqrt(length(x))
       bacf <- acf(x, plot = FALSE, lag.max = max.lag)
       bacfdf <- with(bacf, data.frame(lag, acf))
       if (min.lag > 0) {
@@ -974,24 +1022,28 @@ shinyServer(function(input, output) {
       bacfdf <- cbind(bacfdf, significant)
       q <- qplot(lag, acf, data = bacfdf, geom = "bar", stat = "identity",
                  position = "identity", main = title,
-                 fill = factor(significant))
+                fill = factor(significant))
       q <- q + scale_fill_manual(name = paste("Significant at", 0.95, "level"), breaks = 0:1, labels = c("False", "True"), values=c( "gold", "grey60"))
-      q <- q + geom_hline(yintercept = -ciline, color = "blue", size = 0.2)
-      q <- q + geom_hline(yintercept = ciline, color = "blue", size = 0.2)
-      q <- q + geom_hline(yintercept = 0, color = "deeppink1", size = 0.3)
+      q <- q + geom_hline(yintercept = -ciline, color = "blue", size = 0.4)
+      q <- q + geom_hline(yintercept = ciline, color = "blue", size = 0.4)
+      q <- q + geom_hline(yintercept = 0, color = "deeppink1", size = 0.5)
       
        
       return(q)
     }
     
-    g1<-qacf(x=res.all_g$value[res.all_g$variable=="RW1"], title="RW1") + theme(legend.position="none", axis.title.x = element_blank()) + ylab("Autocorrelation")
+    g1<-qacf(x=res.all_g$value[res.all_g$variable=="RW1"], title="RW1") + theme(legend.position="none", axis.title.x = element_blank()) + ylab("Autocorrelation") 
     g2<-qacf(x=res.all_g$value[res.all_g$variable=="RW2"], title="RW2") + theme(legend.position="none", axis.title.y=element_blank()) + xlab("Lag")
-    g3<-qacf(x=res.all_g$value[res.all_g$variable=="PRM"], title="PRM") + theme(legend.justification=c(1,1), legend.position=c(1,1), axis.title.x = element_blank(), axis.title.y=element_blank()) #R-Cookbook legend pos
+    g3<-qacf(x=res.all_g$value[res.all_g$variable=="PRM"], title="PRM") + theme(legend.justification=c(1,1), legend.position=c(1,1), axis.title.x = element_blank(), axis.title.y=element_blank())  #R-Cookbook legend pos
     
+    #g1<-acf(x=res.all_g$value[res.all_g$variable=="RW1"], main="RW1")
+    #g2<-acf(x=res.all_g$value[res.all_g$variable=="RW2"], main="RW2")
+    #g3<-acf(x=res.all_g$value[res.all_g$variable=="PRM"], main="PRM")        
     #density plot on istogram requncy scalehttps://stat.ethz.ch/pipermail/r-help/2011-June/280588.html
-    g4<- ggplot(res.all_g, aes(x=value[variable=="RW1"])) + geom_histogram(binwidth=.7, alpha=.4, fill="orangered") + geom_density(aes(y=0.7*..count..), colour="grey40") +  theme(legend.position="none", axis.title.x = element_blank()) + ylab("Frequency") + ggtitle("RW1")
-    g5<- ggplot(res.all_g, aes(x=value[variable=="RW2"])) + geom_histogram(binwidth=.7, alpha=.4, fill="green3") + geom_density(aes(y=0.7*..count..), colour="grey40") + theme(legend.position="none", axis.title.y = element_blank()) + xlab("Residuals") + ggtitle("RW2")
+    g4<- ggplot(res.all_g, aes(x=value[variable=="RW1"])) + geom_histogram(binwidth=.7, alpha=.4, fill="orangered") + geom_density(aes(y=0.7*..count..), colour="grey40") +  theme(legend.position="none", axis.title.x = element_blank()) + ylab("Frequency") + ggtitle("RW1") 
+    g5<- ggplot(res.all_g, aes(x=value[variable=="RW2"])) + geom_histogram(binwidth=.7, alpha=.4, fill="green3") + geom_density(aes(y=0.7*..count..), colour="grey40") + theme(legend.position="none", axis.title.y = element_blank()) + xlab("Residuals") + ggtitle("RW2") 
     g6<- ggplot(res.all_g, aes(x=value[variable=="PRM"])) + geom_histogram(binwidth=.7, alpha=.6, fill="cornflowerblue") + geom_density(aes(y=0.7*..count..), colour="grey40") + theme(legend.position="none", axis.title.x = element_blank(), axis.title.y = element_blank()) +  ggtitle("PRM")
+    
     #g4<-qacf(x=res.h_g$value[res.h_g$variable=="RW1"], title="RW1 h") + theme(legend.position="none", axis.title.x = element_blank()) + ylab("Autocorrelation")
     #g5<-qacf(x=res.h_g$value[res.h_g$variable=="RW2"], title="RW2 h") + theme(legend.position="none", axis.title.y=element_blank()) + xlab("Lab")
     #g6<-qacf(x=res.h_g$value[res.h_g$variable=="PRM"], title="PRM h") + theme(legend.justification=c(1,1), legend.position=c(1,1), axis.title.x = element_blank(), axis.title.y=element_blank()) #R-Cookbook legend pos
@@ -1003,7 +1055,7 @@ shinyServer(function(input, output) {
   
   
 
-
+    #dic value in reactive table for each model
     output$dic_crit <- reactiveTable(function() {
       func_type <- input$func_type
       f_type <- input$f_type
@@ -1015,7 +1067,6 @@ shinyServer(function(input, output) {
       
       
       userchoice<-eval(parse(text=input$userchoice))
-      data.orig<-cbind(data.orig, userchoice)
       
       Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
       n <- length(Y)
@@ -1058,7 +1109,7 @@ shinyServer(function(input, output) {
     })
   
   
-  
+  #density plot on histogram 
   output$prediction_acf.facets <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -1072,7 +1123,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -1171,7 +1222,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -1230,12 +1281,14 @@ shinyServer(function(input, output) {
             geom_line(aes(id, upper95), colour="white", linetype="longdash", size=1) +
             #geom_line(aes(id, lower80), colour="lightskyblue", linetype="twodash", size=1) +
             #geom_line(aes(id, upper80), colour="lightskyblue", linetype="twodash", size=1) +
-            facet_grid(. ~ data.variable) + theme(legend.position="none") + xlab("Time") + ylab("Data Values") 
+            facet_grid(. ~ data.variable) + theme(legend.position="none") + xlab("Time in days") + ylab("Data Values")
+            #theme_grey(base_size = 18) +  opts(axis.title.x=theme_text(size=16))
      print(g)
     
     })
   
-  
+  #NOT USED- function producing DIC values based on 2 vectors of starting and horizon values
+  #time consuming due to INLA est. for each value
   output$dic.all_crit <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -1371,5 +1424,66 @@ shinyServer(function(input, output) {
                 
   })
   
-
+  output$dataplot <- reactivePlot(function(){
+    func_type <- input$func_type
+    f_type <- input$f_type
+    sim_func <- input$sim_func
+    harm_func <- input$harm_fit
+    h <- input$h
+    b <- input$b
+    #b <- 1000
+    #h<-100
+    userchoice<-eval(parse(text=input$userchoice))
+    data.orig<-cbind(data.orig, userchoice)
+    #Y <- data.orig[b:2192, 1] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    
+    Y <- data.orig[1:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    n <- length(Y)
+    Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
+    #Y.predict <- c(Y, rep(NA, h))
+    n.predict <- length(Y.predict)
+    time.predict <- 1:n.predict
+    time.hor<- 1: (n.predict-h)
+    time.predict_p <- (n.predict-h+1):n.predict
+    axis_date<-data.frame(b:2192, data.orig[b:2192, 8])
+    
+    #harmonics fitting
+    # sin.year.predict <- 1000*sin(2*pi * time.predict/365)
+    # cos.year.predict <- 0.01*cos(2*pi * time.predict/365)
+    if(harm_func == "auto"){
+      
+      sin.year.predict  <- cos.year.predict  <- matrix(nr=length(time.predict), nc=4)
+      for (i in 1:4){ 
+        cos.year.predict[,i] <- cos(2*pi*i*time.predict/365)
+        sin.year.predict[,i] <- sin(2*pi*i*time.predict/365) 
+      }
+      
+    } else {
+      
+      sin.year.predict <- eval(parse(text=input$para_sin_func))
+      cos.year.predict <- eval(parse(text=input$para_cos_func))
+      
+    }
+    
+    
+    data.predict <- data.frame(Y.predict=Y.predict, time.predict=time.predict, sin.year.predict=sin.year.predict, cos.year.predict=cos.year.predict)
+    formula <- Y.predict ~ time.predict + sin.year.predict + cos.year.predict
+    model.para<- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025, .1, .9, .975))
+    plot(time.predict, Y, col="darkseagreen", pch=20, ylab="Dataset values", xlab="Time in days", main="Simulated data")#, cex.axis=1.8, cex.lab=1.5)
+    #lines(time.hor, model.para$summary.fitted.values[time.hor ,1], col="grey60")
+    #legend("topleft",legend=c("Posterior mean for chosen fitting type", "Posterior mean for chosen horizon", "95% Credible intervals", "80% Credible intervals"), col=c("palevioletred2","red", "lightskyblue1", "lightskyblue"),lty=1, lwd=2)               
+    #plot(time.predict, Y.predict, col="grey80", pch=20, lwd=1, ylab="Dataset values", xlab="Time in years", xaxt="n")#, cex.axis=1.8, cex.lab=1.8)
+    #lines(time.hor, model.para$summary.fitted.values[time.hor ,1], col="grey60")
+    #abline(v=ifelse(is.wholenumber(axis_date[,1]/365), which(is.wholenumber(axis_date[,1]/365)), ""), col="grey40", lwd=0.5)
+    #abline(v=0, col="grey60", lwd=0.5)
+    #axis(side=1, at=ifelse(is.wholenumber(axis_date[,1]/365), which(is.wholenumber(axis_date[,1]/365)),""), labels=as.numeric(substrRight(ifelse(is.wholenumber(axis_date[,1]/365), as.character(axis_date[which(is.wholenumber(axis_date[,1]/365)),2]), 0),4))+1)
+    #legend("topleft",legend=c("Posterior mean for chosen fitting type", "Posterior mean for chosen horizon", "95% Credible intervals"), col=c("palevioletred2","red", "lightskyblue"),lty=1, lwd=2)#, cex=1.4)               
+    
+    
+  })
+  
 })
+
+
+
+
