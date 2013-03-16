@@ -1,16 +1,12 @@
 # I thank R bloggers: R.Hyndman, T.Hirsch and klr from TimelyPortfolio for inspiration
-# H. Wickham from R-Studio, and R Cookbook for ggplot2 package, "multiplot" function and many other fantastic features 
+# H. Wickham from R-Studio, and R Cookbook for ggplot2 package, "multiplot" function and many other fantastic features
 # and last but not least- R-Studio Team for their work on Shiny. 
-
 
 # Installing R-INLA on Shiny server requires dowloading the program from website
 # source("http://www.math.ntnu.no/inla/givemeINLA.R")
 # upgrading
 # inla.upgrade(testing=TRUE)
-# other packages can be installed directly from CRAN
 
-
-#not all the functionality is used in the actual application
 library(shiny)
 library(INLA)
 library(ggplot2)
@@ -27,31 +23,23 @@ shinyServer(function(input, output) {
     }
   ) 
   
-
-  #data simulations
   set.seed(1)
   n <- 100
   k <- 21.92
   N <- k*n
   x <- (1:N)
-  #Gaussian noise
-  #y1 <- rnorm(N)
-  #random walk
-  #y2 <- cumsum(rnorm(N)) + cumsum(rnorm(N)) + rnorm(N)
-  sim1<- 4 + .01* (1:N)+ rnorm(N)
-  sim2<- 5*sin(2*pi*(1:N))+rnorm(N)
-  sim3<- cos(2*pi*(1:N)/10) + rnorm(N) + cumsum(rnorm(N))
-  sim4<- 0.01 + 0.005*(1:N) + (.001*(1:N))^2 + rnorm(N) 
-  sim5<- 4 + sqrt(.001*log10(1:N)) + rnorm(N) + cumsum(rnorm(N))
-  sim6<- 0.5 + 0.5*sin(2*pi*x/365) + 0.5*cos(2*pi*x/365) + 0.8*cos(4*pi*x/365) + 0.8*sin(4*pi*x/365) + cos(8*pi*x/365)   + rnorm(N) #+ sin(8*pi*x/365)
-  #sim6 <- 0.01 + 0.005*(1:N) + (0.001 *(1:N))^2 + 0.5*sin(2*pi*x/365) + 0.5*cos(2*pi*x/365) + cos(4*pi*x/365) + sin(4*pi*x/365) + rnorm(N)
- 
-  data.orig <- data.frame(df[,2], sim1, sim2, sim3, sim4, sim5, sim6, df[,1]) 
-
+  #Gaussian noise -> rnorm(N)
+  #random walk -> cumsum(rnorm(N)) , cumsum(rnorm(N)) + rnorm(N)
+  sim1 <- 4 + .01* (1:N)+ rnorm(N)
+  #sim2<- 5*sin(2*pi*(1:N))+rnorm(N)
+  sim2 <- 0.5 + 0.5*sin(2*pi*x/365) +  0.8*sin(4*pi*x/365) + rnorm(N) 
+  sim3 <- cos(2*pi*(1:N)/356) + 0.5*cos(4*pi*x/365)+ rnorm(N) 
+  sim4 <- 0.01 + 5*(.001*(1:N))^3 + rnorm(N) #0.05*(1:N) + 
+  sim5 <- 4 + sqrt(.001*log10(1:N)) + rnorm(N) + cumsum(rnorm(N))
+  sim6 <- 0.5 + 0.5*sin(2*pi*x/365) + 0.5*cos(2*pi*x/365) + 0.8*cos(4*pi*x/365) + 0.8*sin(4*pi*x/365) + cos(8*pi*x/365) + rnorm(N) #+ sin(8*pi*x/365)
   
-  #functions generating whole numbers and extracting elements from substring-> 
+  #functions generating whole numbers and extracting elements from substring->
   #generation of yearly axis based no dynamically changing starting value and horizon
-
   is.wholenumber <-
     function(x, tol = .Machine$double.eps^0.5)  
       abs(x - round(x)) < tol
@@ -61,48 +49,59 @@ shinyServer(function(input, output) {
     substr(x, nchar(x)-n+1, nchar(x))
   }
   
+  data.orig <- data.frame(df[,2], sim1, sim2, sim3, sim4, sim5, sim6, df[,1])
+  #head(data.set, data.sim)
+  
    #function chosen by the user
-   user_func <- reactive(function(){  
+   user_func <- reactive(function(){
+     
       userchoice <- eval(parse(text=input$userchoice))
       
    })
   
    #simulation or real dataset 
    func <- reactive(function(){
-      func_type <- switch(input$func_type,
+     
+    func_type <- switch(input$func_type,
                         sim="sim",
                         d_set="d_set")   
+     
    })
   
-  #if simulation was chosen, then 6 types of sims will popout 
+  #if simulation was chosen, then 6 types of sims will popout   
   simulation_func <- reactive(function(){
-     sim_func <- switch(input$sim_func,
+    
+    sim_func <- switch(input$sim_func,
                        sim1="linear function",
                        sim2="sine function",
                        sim3="cosine function",
                        sim4="polynomial",
-                       sim5="non-linear type1",
-                       sim6="non-linear type2")
+                       sim5="non-linear",
+                       sim6="harmonic")
     
   })
     
-   #model type
+
    data <- reactive(function(){  
-     f_type <- switch(input$f_type,
+    
+    f_type <- switch(input$f_type,
                    rw1 = "rw1",
                    rw2 = "rw2",
                    para = "para")
+    
+   # f_type(input$h)
   })
   
-   #harmonic either automatic or user defined
-   harm <- reactive(function(){
-      harm_func <- switch(input$harm_fit, 
+  #harmonics for parametric modelling either done automatically or defined by a user 
+  harm <- reactive(function(){
+    
+    harm_func <- switch(input$harm_fit, 
                         auto = "auto",
                         harm_user_def = "harm_user_def")
   })
   
   
-   #reactive function plotting data, fitted model, predictions and credible interval 
+   #reactive function plotting data, fitted model, predictions and credible interval
    #taking the previously chosen settings and user def. functions
    output$prediction <- reactivePlot(function(){
     func_type <- input$func_type
@@ -119,7 +118,7 @@ shinyServer(function(input, output) {
     data.orig<-cbind(data.orig, userchoice)
    # Y <- data.orig[b:2192, 3] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
      
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -130,7 +129,7 @@ shinyServer(function(input, output) {
     axis_date<-data.frame(b:2192, data.orig[b:2192, 8])
     
     
-    #harmonics fitting
+    #prm harmonics fitting
     # sin.year.predict <- 1000*sin(2*pi * time.predict/365)
     # cos.year.predict <- 0.01*cos(2*pi * time.predict/365)
     if(harm_func == "auto"){
@@ -148,7 +147,7 @@ shinyServer(function(input, output) {
      
       }
     
-    #estimation with INLA: modelling with rw1, rw1 and parametirc model, calc. credible intervals and predcitions 
+    #estimation with INLA: modelling with rw1, rw1 and parametirc model, calc. 95% credible intervals (80% excluded) and predcitions
     data.predict <- data.frame(Y.predict=Y.predict, time.predict=time.predict, sin.year.predict=sin.year.predict, cos.year.predict=cos.year.predict)
     formula <- Y.predict ~ time.predict + sin.year.predict + cos.year.predict
     model.para<- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025, .1, .9, .975))
@@ -213,7 +212,7 @@ shinyServer(function(input, output) {
     
    })
     
-    #presenting the results numerically by producing table 
+    #presenting the summary results numerically in a reactive table
     output$prediction_summary <- reactiveTable(function() {
       func_type <- input$func_type
       f_type <- input$f_type
@@ -227,7 +226,7 @@ shinyServer(function(input, output) {
       data.orig<-cbind(data.orig, userchoice)
       #Y <- data.orig[b:2192, 1] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
       
-      Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+      Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
       n <- length(Y)
       Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
       #Y.predict <- c(Y, rep(NA, h))
@@ -277,7 +276,7 @@ shinyServer(function(input, output) {
     
   })
    
-   #reactive summary of hyperparameters sing inla() functionality
+   #reactive summary of hyperparameters using inla() functionality
    output$hyperpar_summary <- reactivePrint(function() {
      func_type <- input$func_type
      f_type <- input$f_type
@@ -290,7 +289,7 @@ shinyServer(function(input, output) {
      userchoice<-eval(parse(text=input$userchoice))
      data.orig<-cbind(data.orig, userchoice)
      
-     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
      n <- length(Y)
      Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
      #Y.predict <- c(Y, rep(NA, h))
@@ -332,7 +331,7 @@ shinyServer(function(input, output) {
        }
      
    })
-
+   
    #model summary
    output$fixed_summary <- reactivePrint(function() {
      func_type <- input$func_type
@@ -346,7 +345,7 @@ shinyServer(function(input, output) {
      userchoice<-eval(parse(text=input$userchoice))
      data.orig<-cbind(data.orig, userchoice)
      
-     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+     Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
      n <- length(Y)
      Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
      #Y.predict <- c(Y, rep(NA, h))
@@ -389,8 +388,8 @@ shinyServer(function(input, output) {
      
    })
   
-  #cal. forecasting errors and presenting them in a reactive table 
-  output$prediction_errors <- reactiveTable(function() {
+   #calc. of forecasting errors and presenting them in a reactive table 
+   output$prediction_errors <- reactiveTable(function() {
     func_type <- input$func_type
     f_type <- input$f_type
     sim_func <- input$sim_func
@@ -402,7 +401,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -501,7 +500,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -651,7 +650,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -782,8 +781,8 @@ shinyServer(function(input, output) {
   })
   
  
-  #calc. residuals and plotting 2 rows of plots: upper with res. of observed data and predicted data, separated by 
-  #a dashed line, the lower one with res. only for prediction 
+  #calc. residuals and plotting 2 rows of plots: upper with res. of observed data and predicted data, separated by
+  #a dashed line, the lower one with res. only for prediction
   output$res.facets <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -796,7 +795,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 8) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -921,7 +920,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 8) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -1055,7 +1054,7 @@ shinyServer(function(input, output) {
   
   
 
-    #dic value in reactive table for each model
+    #dic values in reactive table for each model
     output$dic_crit <- reactiveTable(function() {
       func_type <- input$func_type
       f_type <- input$f_type
@@ -1068,7 +1067,7 @@ shinyServer(function(input, output) {
       
       userchoice<-eval(parse(text=input$userchoice))
       
-      Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
+      Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 8) ))))))]
       n <- length(Y)
       Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
       #Y.predict <- c(Y, rep(NA, h))
@@ -1109,7 +1108,8 @@ shinyServer(function(input, output) {
     })
   
   
-  #density plot on histogram 
+  #the following of reactive functions were implemented but due to various reasons
+  #(space!) not used in the actual app
   output$prediction_acf.facets <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -1123,7 +1123,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -1200,7 +1200,7 @@ shinyServer(function(input, output) {
     
     
      
-    #density plot on istogram frequncy scale https://stat.ethz.ch/pipermail/r-help/2011-June/280588.html
+    #density plot on histogram frequncy scale https://stat.ethz.ch/pipermail/r-help/2011-June/280588.html
     g4<- ggplot(model.all_g, aes(value[x=variable=="RW1"])) + geom_histogram(binwidth=.7, alpha=.4, fill="orangered") + geom_density(aes(y=0.7*..count..), colour="grey40") +  theme(legend.position="none") + xlab("RW1") + ylab("Frequency")
     g5<- ggplot(model.all_g, aes(value[x=variable=="RW2"])) + geom_histogram(binwidth=.7, alpha=.4, fill="green3") + geom_density(aes(y=0.7*..count..), colour="grey40") + theme(legend.position="none") + xlab("RW2") + ylab("Frequency")
     g6<- ggplot(model.all_g, aes(value[x=variable=="PRM"])) + geom_histogram(binwidth=.7, alpha=.6, fill="cornflowerblue") + geom_density(aes(y=0.7*..count..), colour="grey40") + theme(legend.position="none") + xlab("PRM") + ylab("Frequency")
@@ -1222,7 +1222,7 @@ shinyServer(function(input, output) {
     userchoice<-eval(parse(text=input$userchoice))
     data.orig<-cbind(data.orig, userchoice)
     
-    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    Y <- data.orig[b:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -1287,8 +1287,7 @@ shinyServer(function(input, output) {
     
     })
   
-  #NOT USED- function producing DIC values based on 2 vectors of starting and horizon values
-  #time consuming due to INLA est. for each value
+  
   output$dic.all_crit <- reactivePlot(function() {
     func_type <- input$func_type
     f_type <- input$f_type
@@ -1437,7 +1436,7 @@ shinyServer(function(input, output) {
     data.orig<-cbind(data.orig, userchoice)
     #Y <- data.orig[b:2192, 1] #ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 8) ))))))]
     
-    Y <- data.orig[1:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear type1", 6, ifelse(sim_func=="non-linear type2", 7, 9) ))))))]
+    Y <- data.orig[1:2192, ifelse(func_type=="d_set", 1 , ifelse(sim_func=="linear function", 2, ifelse(sim_func=="sine function", 3, ifelse(sim_func=="cosine function", 4, ifelse(sim_func=="polynomial", 5, ifelse(sim_func=="non-linear", 6, ifelse(sim_func=="harmonic", 7, 9) ))))))]
     n <- length(Y)
     Y.predict<-c(Y[1:(length(Y)-h)],rep(NA,h)) 
     #Y.predict <- c(Y, rep(NA, h))
@@ -1464,8 +1463,7 @@ shinyServer(function(input, output) {
       cos.year.predict <- eval(parse(text=input$para_cos_func))
       
     }
-    
-    
+   
     data.predict <- data.frame(Y.predict=Y.predict, time.predict=time.predict, sin.year.predict=sin.year.predict, cos.year.predict=cos.year.predict)
     formula <- Y.predict ~ time.predict + sin.year.predict + cos.year.predict
     model.para<- inla(formula=formula, family="gaussian", data=data.predict, control.compute=list(dic=TRUE, mlik=TRUE), control.fixed=list(mean.intercept=0, prec.intercept=0.0001), quantiles=c(.025, .1, .9, .975))
@@ -1478,12 +1476,5 @@ shinyServer(function(input, output) {
     #abline(v=0, col="grey60", lwd=0.5)
     #axis(side=1, at=ifelse(is.wholenumber(axis_date[,1]/365), which(is.wholenumber(axis_date[,1]/365)),""), labels=as.numeric(substrRight(ifelse(is.wholenumber(axis_date[,1]/365), as.character(axis_date[which(is.wholenumber(axis_date[,1]/365)),2]), 0),4))+1)
     #legend("topleft",legend=c("Posterior mean for chosen fitting type", "Posterior mean for chosen horizon", "95% Credible intervals"), col=c("palevioletred2","red", "lightskyblue"),lty=1, lwd=2)#, cex=1.4)               
-    
-    
   })
-  
 })
-
-
-
-
